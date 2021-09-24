@@ -5,16 +5,35 @@ import axios from "axios";
 export default {
   data() {
     return {
-      medicamentos: [{ id: 3 }, { id: 4 }],
+      medicamentos: [],
+      lista_medicamentos: [],
       simular: true,
-      selected: null,
-      resultado: null,
+      selected: "Simular",
       promocion_id: null,
       fecha_simulada: null,
+      message: "",
+      lista_promocion: null,
+      promocion_id: null,
     };
   },
-  mounted() {},
+  mounted() {
+    this.listar();
+    this.listar_promociones();
+  },
   methods: {
+    seleccionar_medicamento: function (e) {
+      const index = e.target.value;
+      this.medicamentos.push(this.lista_medicamentos[index]);
+    },
+    accion: function (e) {
+      if (e) e.preventDefault();
+      console.log(this.selected);
+      if (this.selected == "Simular") {
+        this.calcular_simulador();
+      } else {
+        this.crear_factura();
+      }
+    },
     calcular_simulador: function (e) {
       axios
         .get(
@@ -23,28 +42,38 @@ export default {
             .join(",")}&fecha_compra=${this.fecha_simulada}`
         )
         .then((response) => {
-          console.log(response);
-          this.resultado = response.data;
+          this.message = "El valor simulado es:" + response.data;
         });
     },
     crear_factura: function (e) {
+      console.log(this.promocion_id)
       axios({
         method: "post",
         url: "http://localhost:8090/factura",
         data: {
-          id_promocion: this.promcion_id,
+          id_promocion: this.promocion_id,
           pago_total: 1,
           id_medicamentos: this.medicamentos.map((data) => data.id),
         },
       })
         .then((data) => {
-          console.log(data);
+          this.message = data.data;
           this.medicamentos = null;
           this.promocion_id = null;
         })
         .catch((data) => {
           console.log(data.error);
         });
+    },
+    listar: function () {
+      axios.get("http://localhost:8090/medicamento").then((response) => {
+        this.lista_medicamentos = response.data;
+      });
+    },
+    listar_promociones: function () {
+      axios.get("http://localhost:8090/promocion").then((response) => {
+        this.lista_promocion = response.data;
+      });
     },
   },
 };
@@ -54,7 +83,120 @@ export default {
   <div>
     <div class="mt-10 sm:mt-0">
       <div class="md:grid md:grid-cols-3 md:gap-6">
-        <div class="mt md:mt-0 md:col-span-6"></div>
+        <div class="mt md:mt-0 md:col-span-6">
+          <form>
+            <div class="shadow overflow-hidden sm:rounded-md">
+              <div class="px-4 py-5 bg-white sm:p-12">
+                <div class="grid grid-cols-12 gap-8">
+                  <div class="col-span-2 sm:col-span-2">
+                    <label
+                      for="precio"
+                      class="block text-sm font-medium text-gray-700"
+                      >Acción</label
+                    >
+                    <select
+                      class="form-select mt-1 block w-full"
+                      v-model="selected"
+                    >
+                      <option>Simular</option>
+                      <option>Crear Factura</option>
+                    </select>
+                  </div>
+                  <div class="col-span-2 sm:col-span-2">
+                    <label
+                      for="precio"
+                      class="block text-sm font-medium text-gray-700"
+                      >Medicamentos</label
+                    >
+                    <select
+                      class="form-select mt-1 block w-full"
+                      @change="seleccionar_medicamento"
+                    >
+                      <option
+                        v-for="(item, index) in lista_medicamentos"
+                        :key="item.id"
+                        :value="index"
+                      >
+                        {{ item.nombre }}
+                      </option>
+                    </select>
+                  </div>
+                  <div class="col-span-2 sm:col-span-2" v-if="selected!='Simular'">
+                    <label
+                      for="precio"
+                      class="block text-sm font-medium text-gray-700"
+                      >Promociones</label
+                    >
+                    <select
+                      class="form-select mt-1 block w-full"
+                      v-model="promocion_id"
+                    >
+                      <option
+                        v-for="(item) in lista_promocion"
+                        :key="item.id"
+                        :value="item.id"
+                      >
+                        {{ item.porcentaje }}%
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    class="col-span-2 sm:col-span-3"
+                    v-if="selected == 'Simular'"
+                  >
+                    <label
+                      for="nombre"
+                      class="block text-sm font-medium text-gray-700"
+                      >Fecha</label
+                    >
+                    <input
+                      type="text"
+                      name="nombre"
+                      id="nombre"
+                      v-model="fecha_simulada"
+                      autocomplete="given-name"
+                      class="
+                        mt-1
+                        focus:ring-indigo-500
+                        focus:border-indigo-500
+                        block
+                        w-full
+                        shadow-sm
+                        sm:text-sm
+                        border-gray-300
+                        rounded-md
+                      "
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="mx-2 px-4 py-3 bg-gray-50 text-right sm:px-6">
+                {{ message }}
+                <button
+                  @click="accion"
+                  class="
+                    inline-flex
+                    justify-center
+                    py-2
+                    px-4
+                    border border-transparent
+                    shadow-sm
+                    text-sm
+                    font-medium
+                    rounded-md
+                    text-white
+                    bg-indigo-600
+                    hover:bg-indigo-700
+                    focus:outline-none
+                    focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
+                  "
+                >
+                  Guardar
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
 
@@ -138,3 +280,7 @@ export default {
     </div>
   </div>
 </template>
+
+
+<style scoped>
+</style>

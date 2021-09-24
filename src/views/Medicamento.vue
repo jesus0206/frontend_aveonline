@@ -12,6 +12,7 @@ export default {
   },
   mounted() {
     this.listar();
+
   },
   methods: {
     create_medicamento: function (e) {
@@ -43,6 +44,7 @@ export default {
         this.data = response.data;
       });
     },
+
   },
 };
 </script>
